@@ -1,3 +1,4 @@
 sha-256-gen.go
 
 - once localdb is inplace make it so size & Modtime are compared so that hash wont have to run needlessly
+- continue to comment new implementations
