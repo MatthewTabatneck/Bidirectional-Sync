@@ -1,6 +1,7 @@
 package fs
 
 import (
+	"bidirectional-sync/db"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
@@ -38,8 +39,7 @@ type FileFailure struct {
 // - check and store last modified time
 // - call and store hashFile
 // All while storing any error the func comes across and moving onto the next file
-func ParseDirectory(root string) ([]FileData, []FileFailure, error) {
-	var results []FileData
+func ParseDirectory(root string, store *db.Store) ([]FileFailure, error) {
 	var failures []FileFailure
 
 	err := filepath.WalkDir(root, func(path string, d os.DirEntry, walkErr error) error {
@@ -53,6 +53,10 @@ func ParseDirectory(root string) ([]FileData, []FileFailure, error) {
 		}
 
 		if d.IsDir() {
+			return nil
+		}
+
+		if filepath.Base(path) == "gophersync.db" {
 			return nil
 		}
 
@@ -76,21 +80,19 @@ func ParseDirectory(root string) ([]FileData, []FileFailure, error) {
 			return nil
 		}
 
-		results = append(results, FileData{
-			Path:    path,
-			Hash:    hash,
-			Size:    info.Size(),
-			ModTime: info.ModTime(),
-		})
+		// --- NEW: UPSERT TO DATABASE ---
+		// Instead of results = append(results, ...), we save directly.
+		err = store.UpsertFile(path, hash, info.Size(), info.ModTime())
+		if err != nil {
+			// We treat a DB failure as a major issue, but you could also
+			// log it as a FailureStage "db" if you want to keep going.
+			return fmt.Errorf("failed to save %s to db: %w", path, err)
+		}
 
 		return nil
 	})
 
-	if err != nil {
-		return results, failures, fmt.Errorf("walk aborted for root %q: %w", root, err)
-	}
-
-	return results, failures, nil
+	return failures, err
 }
 
 // Function hashFile will take individual file locations and create a sha256 hash of its data

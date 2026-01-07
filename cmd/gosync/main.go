@@ -1,48 +1,40 @@
 package main
 
 import (
-	// "bidirectional-sync/internal/fs"
-	// "fmt"
-	// "log/slog"
 	"bidirectional-sync/db"
+	"bidirectional-sync/internal/fs"
+	"fmt"
 	"log"
-	"time"
 )
 
 func main() {
-	// root := "C:/Users/mmtab/Desktop/Linux-Laptop"
-
-	// fileHashes, failures, err := fs.ParseDirectory(root)
-	// if err != nil {
-	// 	slog.Error("directory scan failed", "root", root, "err", err)
-	// 	return
-	// }
-
-	// slog.Info("scan complete",
-	// 	"files_ok", len(fileHashes),
-	// 	"files_failed", len(failures),
-	// )
-
-	// for _, f := range failures {
-	// 	slog.Warn("file skipped",
-	// 		"path", f.Path,
-	// 		"stage", f.Stage,
-	// 		"err", f.Err,
-	// 	)
-	// }
-
-	// fmt.Println(fileHashes)
-
-	// 1. Initialize the DB
-	store, err := db.NewStore("./gophersync.db")
-	if err != nil {
-		log.Fatal(err)
-	}
+	// 1. Init DB
+	store, _ := db.NewStore("./gophersync.db")
 	defer store.Close()
 
-	// 2. Example: Saving a file manually
-	err = store.UpsertFile("tst.txt", "abc123hash", 1024, time.Now())
+	// 2. Run the scan
+	fmt.Println("Scanning and hashing files...")
+	failures, err := fs.ParseDirectory("C:/Users/mmtab/Desktop/Linux-Laptop", store)
+
 	if err != nil {
-		log.Printf("Failed to save to DB: %v", err)
+		log.Fatalf("Fatal error: %v", err)
 	}
+
+	// 3. Report failures
+	for _, f := range failures {
+		fmt.Printf("Failed at stage [%s] for file %s: %v\n", f.Stage, f.Path, f.Err)
+	}
+
+	// 1. Initialize the DB
+	// store, err := db.NewStore("./gophersync.db")
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	// defer store.Close()
+
+	// // 2. Example: Saving a file manually
+	// err = store.UpsertFile("tst.txt", "abc123hash", 1024, time.Now())
+	// if err != nil {
+	// 	log.Printf("Failed to save to DB: %v", err)
+	// }
 }
