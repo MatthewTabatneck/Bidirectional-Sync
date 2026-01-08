@@ -1,4 +1,10 @@
-sha-256-gen.go
+sha-256-gen.go:
 
-- once localdb is inplace make it so size & Modtime are compared so that hash wont have to run needlessly
+- Add size and Modtime check into ParseDirectory so hash is not hit every time 
+- Add file deletion cababilities so that both db and code walkdir will recognize deleted file
+
+
+Remember:
+
+- Becareful of "/" and "\" in file path they are different in linux and Windows
 - continue to comment new implementations
