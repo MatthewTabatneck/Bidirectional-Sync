@@ -1,7 +1,7 @@
 package main
 
 import (
-	"bidirectional-sync/db"
+	"bidirectional-sync/internal/db"
 	"bidirectional-sync/internal/fs"
 	"fmt"
 	"log"

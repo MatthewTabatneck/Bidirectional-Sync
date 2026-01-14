@@ -13,7 +13,8 @@ type Store struct {
 
 // NewStore initializes the SQLite database and creates the table if it doesn't exist.
 func NewStore(dbPath string) (*Store, error) {
-	db, err := sql.Open("sqlite", dbPath)
+	// Add the busy_timeout pragma to the connection string
+	db, err := sql.Open("sqlite", dbPath+"?_pragma=busy_timeout(5000)")
 	if err != nil {
 		return nil, err
 	}
@@ -53,6 +54,31 @@ func (s *Store) UpsertFile(path string, hash string, size int64, modTime time.Ti
 		return err
 	}
 	return nil
+}
+
+func (s *Store) NeedsUpdate(path string, size int64, modTime time.Time) (bool, error) {
+	var dbSize int64
+	var dbModTime time.Time
+
+	// We only care about files that aren't marked as deleted
+	query := `SELECT size, mod_time FROM files WHERE path = ? AND is_deleted = 0`
+	err := s.db.QueryRow(query, path).Scan(&dbSize, &dbModTime)
+
+	if err == sql.ErrNoRows {
+		// File is not in the DB, needs to be processed
+		return true, nil
+	}
+	if err != nil {
+		return false, err
+	}
+
+	// Compare Size and Unix timestamps (seconds since 1970)
+	// This avoids nanosecond precision issues between Go and SQLite
+	if dbSize != size || dbModTime.Unix() != modTime.Unix() {
+		return true, nil
+	}
+
+	return false, nil
 }
 
 // Close safely shuts down the database connection.

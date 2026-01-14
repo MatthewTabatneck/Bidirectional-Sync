@@ -1,7 +1,7 @@
 package fs
 
 import (
-	"bidirectional-sync/db"
+	"bidirectional-sync/internal/db"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
@@ -69,6 +69,19 @@ func ParseDirectory(root string, store *db.Store) ([]FileFailure, error) {
 			})
 			return nil
 		}
+
+		//run func to check if path, info.Size(), info.ModTime() already exist
+		needsUpdate, err := store.NeedsUpdate(path, info.Size(), info.ModTime())
+		if err != nil {
+			return fmt.Errorf("failed to save %s to db: %w", path, err)
+		}
+
+		if !needsUpdate {
+			fmt.Printf(">>> SKIPPING: %s (No changes detected)\n", path)
+			return nil
+		}
+
+		// Proceed to hashFile(path) and store.UpsertFile(...)
 
 		hash, err := hashFile(path)
 		if err != nil {
