@@ -1,6 +1,6 @@
 sha-256-gen.go:
 
-- Add size and Modtime check into ParseDirectory so hash is not hit every time 
+X - Add size and Modtime check into ParseDirectory so hash is not hit every time 
 - Add file deletion cababilities so that both db and code walkdir will recognize deleted file
 
 
